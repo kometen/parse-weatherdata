@@ -12,6 +12,7 @@ fn indent(size: usize) -> String {
 }
 
 fn main() {
+    let mut measurement: bool = false;
     let file = File::open("output_vegvesen.xml").unwrap();
     let file = BufReader::new(file);
 
@@ -20,19 +21,32 @@ fn main() {
     for e in parser {
         match e {
             Ok(XmlEvent::StartElement { name, attributes, .. }) => {
-                print!("{}+{}", indent(depth), name);
-                for attribute in attributes {
-                    print!(":{}", attribute);
+                let name = name.local_name;
+                if name == "siteMeasurements" {
+                    measurement = true
                 }
-                println!();
-                depth += 1;
+                if measurement {
+                    print!("{}+{}", indent(depth), name);
+                    for attribute in attributes {
+                        print!(":{}", attribute.value);
+                    }
+                    println!();
+                    depth += 1;
+                }
             }
             Ok(XmlEvent::Characters(s)) => {
-                println!("{}{}", indent(depth), s);
+                if measurement {
+                    println!("{}{}", indent(depth), s);
+                }
             }
             Ok(XmlEvent::EndElement { name }) => {
-                depth -= 1;
-                println!("{}-{}", indent(depth), name);
+                if measurement {
+                    let _ = name.local_name;
+                    //println!("{}-{}", indent(depth), name);
+                    if depth > 0 {
+                        depth -= 1;
+                    }
+                }
             }
             Err(e) => {
                 println!("Error: {}", e);
